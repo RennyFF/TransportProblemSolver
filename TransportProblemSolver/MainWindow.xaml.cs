@@ -20,11 +20,11 @@ namespace TransportProblemSolver
         public MainWindow()
         {
             InitializeComponent();
-            RowSizeComboBox.SelectedIndex = 2; // Default to 4
-            ColumnSizeComboBox.SelectedIndex = 2; // Default to 4
+            RowSizeComboBox.SelectedIndex = 2;
+            ColumnSizeComboBox.SelectedIndex = 2;
         }
 
-        private void SizeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void SizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (RowSizeComboBox.SelectedItem != null)
             {
@@ -35,6 +35,27 @@ namespace TransportProblemSolver
             {
                 columnCount = int.Parse(((ComboBoxItem)ColumnSizeComboBox.SelectedItem).Content.ToString());
             }
+        }
+
+        private void SolveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (cost == null || Osupply == null || Odemand == null)
+            {
+                MessageBox.Show("Пожалуйста, загрузите данные из файла перед решением задачи.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            List<int> _s = new(Osupply);
+            List<int> _d = new(Odemand);
+            solution = SolveTransportProblem(cost, _s, _d);
+
+            ResultDataGrid.ItemsSource = solution.Select(r => new
+            {
+                From = r.From,
+                To = r.To,
+                Quantity = r.Quantity,
+                Cost = r.Cost
+            }).ToList();
         }
 
         private void UploadButton_Click(object sender, RoutedEventArgs e)
@@ -54,7 +75,6 @@ namespace TransportProblemSolver
                         Osupply = new List<int>();
                         Odemand = new List<int>();
 
-                        // Чтение коэффициентов
                         for (int i = 0; i < rowCount; i++)
                         {
                             for (int j = 0; j < columnCount; j++)
@@ -63,13 +83,11 @@ namespace TransportProblemSolver
                             }
                         }
 
-                        // Чтение запасов
                         for (int i = 0; i < rowCount; i++)
                         {
                             Osupply.Add((int)worksheet.Cell(i + 2, columnCount + 2).GetValue<double>());
                         }
 
-                        // Чтение потребностей
                         for (int j = 0; j < columnCount; j++)
                         {
                             Odemand.Add((int)worksheet.Cell(rowCount + 2, j + 2).GetValue<double>());
@@ -87,15 +105,12 @@ namespace TransportProblemSolver
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-
-            if (cost == null || Osupply == null || Odemand == null)
+            if (solution == null || !solution.Any())
             {
-                MessageBox.Show("Пожалуйста, загрузите данные из файла перед решением задачи.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Сначала решите задачу, чтобы сохранить результат.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            List<int> _s = new(Osupply);
-            List<int> _d = new(Odemand);
-            solution = SolveTransportProblem(cost, _s, _d);
+
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "Файлы Excel|*.xlsx;*.xls"
@@ -108,7 +123,6 @@ namespace TransportProblemSolver
                     {
                         var worksheet = workbook.Worksheets.Add("Solution");
 
-                        // Заголовки
                         worksheet.Cell(1, 1).Value = "Поставщики\\Потребители";
                         for (int j = 0; j < columnCount; j++)
                         {
@@ -116,7 +130,6 @@ namespace TransportProblemSolver
                         }
                         worksheet.Cell(1, columnCount + 2).Value = "Использовано";
 
-                        // Данные решения и заполнение нулями
                         for (int i = 0; i < rowCount; i++)
                         {
                             worksheet.Cell(i + 2, 1).Value = $"Поставщик {i + 1}";
@@ -128,7 +141,6 @@ namespace TransportProblemSolver
                             }
                         }
 
-                        // Суммирование по столбцам (потребности)
                         worksheet.Cell(rowCount + 2, 1).Value = "Объем доставки (шт)";
                         for (int j = 0; j < columnCount; j++)
                         {
@@ -136,14 +148,12 @@ namespace TransportProblemSolver
                             worksheet.Cell(rowCount + 2, j + 2).Style.Fill.SetBackgroundColor(XLColor.LightGray);
                         }
 
-                        // Суммирование по строкам (запасы)
                         for (int i = 0; i < rowCount; i++)
                         {
                             worksheet.Cell(i + 2, columnCount + 2).FormulaA1 = $"SUM({worksheet.Cell(i + 2, 2).Address}:{worksheet.Cell(i + 2, columnCount + 1).Address})";
                             worksheet.Cell(i + 2, columnCount + 2).Style.Fill.SetBackgroundColor(XLColor.LightGray);
                         }
 
-                        // Изначальные потребности и запасы
                         worksheet.Cell(rowCount + 3, 1).Value = "Потребность";
                         for (int j = 0; j < columnCount; j++)
                         {
@@ -158,7 +168,6 @@ namespace TransportProblemSolver
                             worksheet.Cell(i + 2, columnCount + 3).Style.Fill.SetBackgroundColor(XLColor.Gray);
                         }
 
-                        // Общая стоимость
                         worksheet.Cell(rowCount + 5, 1).Value = "F(x)";
                         worksheet.Cell(rowCount + 5, 2).Value = solution.Sum(r => r.Cost);
                         worksheet.Cell(rowCount + 5, 2).Style.Fill.SetBackgroundColor(XLColor.LightGreen);
@@ -187,7 +196,6 @@ namespace TransportProblemSolver
             int[] uValues = new int[m];
             int[] vValues = new int[n];
 
-            // Метод северо-западного угла
             int i = 0, j = 0;
             while (i < m && j < n)
             {
@@ -199,7 +207,6 @@ namespace TransportProblemSolver
                 if (demand[j] == 0) j++;
             }
 
-            // Метод потенциалов
             u[0] = true;
             while (true)
             {
@@ -228,7 +235,6 @@ namespace TransportProblemSolver
                 if (!updated) break;
             }
 
-            // Построение результата
             for (i = 0; i < m; i++)
             {
                 for (j = 0; j < n; j++)
@@ -251,13 +257,10 @@ namespace TransportProblemSolver
 
         private void AddBordersToUsedRange(IXLWorksheet worksheet)
         {
-            // Получаем диапазон ячеек, содержащих данные
             var range = worksheet.RangeUsed();
 
-            // Проверяем, что диапазон не пустой
             if (range != null)
             {
-                // Перебираем все ячейки в диапазоне
                 foreach (IXLCell cell in range.Cells())
                 {
                     if (!cell.Value.IsBlank)
