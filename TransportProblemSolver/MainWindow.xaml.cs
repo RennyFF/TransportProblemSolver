@@ -36,8 +36,7 @@ namespace TransportProblemSolver
                 columnCount = int.Parse(((ComboBoxItem)ColumnSizeComboBox.SelectedItem).Content.ToString());
             }
         }
-
-        private void SolveButton_Click(object sender, RoutedEventArgs e)
+        private void UploadButton_Click(object sender, RoutedEventArgs e)
         {
             if (cost == null || Osupply == null || Odemand == null)
             {
@@ -49,17 +48,6 @@ namespace TransportProblemSolver
             List<int> _d = new(Odemand);
             solution = SolveTransportProblem(cost, _s, _d);
 
-            ResultDataGrid.ItemsSource = solution.Select(r => new
-            {
-                From = r.From,
-                To = r.To,
-                Quantity = r.Quantity,
-                Cost = r.Cost
-            }).ToList();
-        }
-
-        private void UploadButton_Click(object sender, RoutedEventArgs e)
-        {
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Filter = "Файлы Excel|*.xlsx;*.xls"
