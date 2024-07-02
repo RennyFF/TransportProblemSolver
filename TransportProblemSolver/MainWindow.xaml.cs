@@ -38,15 +38,6 @@ namespace TransportProblemSolver
         }
         private void UploadButton_Click(object sender, RoutedEventArgs e)
         {
-            if (cost == null || Osupply == null || Odemand == null)
-            {
-                MessageBox.Show("Пожалуйста, загрузите данные из файла перед решением задачи.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            List<int> _s = new(Osupply);
-            List<int> _d = new(Odemand);
-            solution = SolveTransportProblem(cost, _s, _d);
 
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -93,12 +84,15 @@ namespace TransportProblemSolver
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (solution == null || !solution.Any())
+            if (cost == null || Osupply == null || Odemand == null)
             {
-                MessageBox.Show("Сначала решите задачу, чтобы сохранить результат.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Пожалуйста, загрузите данные из файла перед решением задачи.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
+            List<int> _s = new(Osupply);
+            List<int> _d = new(Odemand);
+            solution = SolveTransportProblem(cost, _s, _d);
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "Файлы Excel|*.xlsx;*.xls"
